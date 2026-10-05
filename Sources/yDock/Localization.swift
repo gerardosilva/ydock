@@ -31,7 +31,7 @@ enum Localizer {
         "pos.above":       ["Above the system Dock", "Arriba del Dock de Apple", "Au-dessus du Dock Apple",
                             "Über dem Apple-Dock", "Acima do Dock da Apple", "Sopra il Dock di Apple",
                             "システムDockの上", "系统程序坞上方"],
-        "pos.top":         ["Top", "Arriba", "Haut", "Oben", "Em cima", "In alto", "上", "顶部"],
+        "pos.top":         ["Notch", "Notch", "Notch", "Notch", "Notch", "Notch", "ノッチ", "刘海"],
         "pos.left":        ["Left", "Izquierda", "Gauche", "Links", "Esquerda", "Sinistra", "左", "左侧"],
         "pos.right":       ["Right", "Derecha", "Droite", "Rechts", "Direita", "Destra", "右", "右侧"],
         "menu.appearance": ["Appearance", "Apariencia", "Apparence", "Erscheinungsbild", "Aparência", "Aspetto", "外観", "外观"],

@@ -127,7 +127,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         case .aboveSystemDock:
             o = NSPoint(x: v.midX - w / 2, y: visible ? v.minY + m : f.minY - h + 1)
         case .top:
-            o = NSPoint(x: v.midX - w / 2, y: visible ? v.maxY - h + 6 : f.maxY - 1)
+            o = NSPoint(x: v.midX - w / 2, y: visible ? v.maxY - h : f.maxY - 1)   // notch: flush under the menu bar
         case .left:
             o = NSPoint(x: visible ? v.minX + m : f.minX - w + 1, y: v.midY - h / 2)
         case .right:

@@ -10,7 +10,8 @@ yDock runs alongside (or instead of) Apple's Dock: a floating panel with your ap
 
 **Dock**
 - Apps, folders, files and separators; drag to reorder, drop from Finder to add, right-click to remove or reveal in Finder.
-- Five positions: bottom, above Apple's Dock, top (flush under the menu bar), left and right. Left/right docks switch to a compact vertical layout.
+- Five positions: bottom, above Apple's Dock, **Notch** (top), left and right. Left/right docks switch to a compact vertical layout.
+- **Notch mode:** the dock attaches to the bottom of the menu bar — flat top fused to it, rounded corners only at the bottom, no outline along the join — without covering any menu bar items. It uses the same dark / light / tinted colors as every other position.
 - Auto-hide with edge reveal.
 - Running-app indicators and hover zoom (both optional).
 - Resize handle at the end of the dock: drag to make the whole dock smaller or bigger, double-click to reset. The handle grows and the cursor turns into a resize arrow on hover.
@@ -99,7 +100,7 @@ Settings are stored in `~/.config/ydock/config.json`. It reloads automatically w
 
 ```jsonc
 {
-  "position": "bottom",          // bottom | aboveSystemDock | top | left | right
+  "position": "bottom",          // bottom | aboveSystemDock | top (Notch) | left | right
   "autoHide": false,
   "appearance": "dark",          // dark | light | tinted
   "tint": "#0A84FF",

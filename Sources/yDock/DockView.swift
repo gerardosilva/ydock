@@ -203,6 +203,28 @@ struct ResizeHandle: View {
     }
 }
 
+/// Notch silhouette: flat top that fuses with the menu bar above it (concave "ears"), rounded corners only at the bottom.
+struct NotchShape: Shape {
+    var bottomRadius: CGFloat
+    var ear: CGFloat = 10
+
+    func path(in r: CGRect) -> Path {
+        let e = ear
+        let b = max(0, min(bottomRadius, r.height / 2, (r.width - 2 * e) / 2))
+        var p = Path()
+        p.move(to: CGPoint(x: r.minX, y: r.minY))
+        p.addQuadCurve(to: CGPoint(x: r.minX + e, y: r.minY + e), control: CGPoint(x: r.minX + e, y: r.minY))
+        p.addLine(to: CGPoint(x: r.minX + e, y: r.maxY - b))
+        p.addQuadCurve(to: CGPoint(x: r.minX + e + b, y: r.maxY), control: CGPoint(x: r.minX + e, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.maxX - e - b, y: r.maxY))
+        p.addQuadCurve(to: CGPoint(x: r.maxX - e, y: r.maxY - b), control: CGPoint(x: r.maxX - e, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.maxX - e, y: r.minY + e))
+        p.addQuadCurve(to: CGPoint(x: r.maxX, y: r.minY), control: CGPoint(x: r.maxX - e, y: r.minY))
+        p.closeSubpath()
+        return p
+    }
+}
+
 struct DockMetrics {
     let vertical: Bool
     let spacing: Double
@@ -277,10 +299,25 @@ struct DockView: View {
         ], startPoint: vertical ? .top : .leading, endPoint: vertical ? .bottom : .trailing)
     }
 
+    /// Same colors for every position (material + tint per the appearance setting); only the silhouette differs.
+    @ViewBuilder
+    private func dockBackground(_ cfg: DockConfig, notch: Bool) -> some View {
+        let shape: AnyShape = notch ? AnyShape(NotchShape(bottomRadius: cfg.cornerRadius))
+                                    : AnyShape(RoundedRectangle(cornerRadius: cfg.cornerRadius))
+        shape.fill(.ultraThinMaterial)
+            .overlay(shape.fill(Color(hex: cfg.tint).opacity(cfg.appearance == .tinted ? 0.45 : 0)))
+            .overlay(
+                shape.stroke(Color.primary.opacity(0.2))
+                    // No outline along the top: the notch should look like part of the menu bar, not sit under it.
+                    .mask(VStack(spacing: 0) { Color.clear.frame(height: notch ? 12 : 0); Color.black })
+            )
+    }
+
     var body: some View {
         let cfg = model.config
         let m = metrics(cfg)
         let vertical = m.vertical
+        let notch = cfg.position == .top
         let off = min(Double(scroller.offset), m.maxOffset)
         let layout = vertical
             ? AnyLayout(VStackLayout(spacing: m.spacing)) : AnyLayout(HStackLayout(spacing: m.spacing))
@@ -306,15 +343,12 @@ struct DockView: View {
         .onChange(of: "\(Int(m.maxOffset))|\(m.starts.count)|\(Int(m.starts.last ?? 0))") { _ in
             scroller.configure(starts: m.starts, maxOffset: m.maxOffset)
         }
-        .padding(.horizontal, vertical ? 6 : 14)
-        .padding(.vertical, vertical ? 10 : 8)
-        .background(
-            RoundedRectangle(cornerRadius: cfg.cornerRadius).fill(.ultraThinMaterial)
-                .overlay(RoundedRectangle(cornerRadius: cfg.cornerRadius)
-                    .fill(Color(hex: cfg.tint).opacity(cfg.appearance == .tinted ? 0.45 : 0)))
-                .overlay(RoundedRectangle(cornerRadius: cfg.cornerRadius).stroke(Color.primary.opacity(0.2)))
-        )
-        .padding(6)
+        .padding(.horizontal, vertical ? 6 : (notch ? 26 : 14))
+        .padding(.top, vertical ? 10 : (notch ? 6 : 8))
+        .padding(.bottom, vertical ? 10 : 8)
+        .background(dockBackground(cfg, notch: notch))
+        // The notch touches the menu bar (no gap above it); other positions keep a small margin.
+        .padding(.top, notch ? 0 : 6).padding(.horizontal, notch ? 0 : 6).padding(.bottom, 6)
         .environment(\.dockVertical, vertical)
         .environment(\.locale, Localizer.locale)
         .environment(\.colorScheme, cfg.appearance == .light ? .light : .dark)
