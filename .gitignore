@@ -1,0 +1,6 @@
+.build/
+*.app
+*.zip
+.DS_Store
+# local code-signing identity (private key lives here) — never commit
+signing/
