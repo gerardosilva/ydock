@@ -131,9 +131,12 @@ final class ResizeDragState: ObservableObject {
 /// (plain cursor rects / NSCursor.push are ignored in that case; `.activeAlways` tracking areas are not).
 struct CursorArea: NSViewRepresentable {
     let cursor: NSCursor
+    /// True while a drag that started on this area is in progress (the cursor must survive the dock re-centering).
+    var holding = false
 
     final class TrackingView: NSView {
         var cursor: NSCursor = .arrow
+        var holding = false { didSet { if holding { start() } } }
         private var reassert: Timer?
 
         override func hitTest(_ point: NSPoint) -> NSView? { nil }   // never swallow clicks
@@ -144,26 +147,44 @@ struct CursorArea: NSViewRepresentable {
                                            owner: self, userInfo: nil))
             super.updateTrackingAreas()
         }
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if window == nil { stop(restore: true) }
+        }
         override func cursorUpdate(with event: NSEvent) { cursor.set() }
         override func mouseMoved(with event: NSEvent) { cursor.set() }
-        override func mouseEntered(with event: NSEvent) {
-            cursor.set()
-            // The app is not active, so the system keeps resetting the cursor; re-assert it while hovering.
-            reassert?.invalidate()
-            let t = Timer(timeInterval: 0.03, repeats: true) { [weak self] _ in self?.cursor.set() }
+        override func mouseEntered(with event: NSEvent) { cursor.set(); start() }
+        override func mouseExited(with event: NSEvent) { if !holding { stop(restore: true) } }
+        deinit { reassert?.invalidate() }
+
+        /// The app is not active, so the system keeps resetting the cursor; re-assert it while hovering.
+        /// Every tick re-checks where the mouse really is, so a missed mouse-exit event can never leave it stuck.
+        private func start() {
+            guard reassert == nil else { return }
+            let t = Timer(timeInterval: 0.03, repeats: true) { [weak self] _ in self?.tick() }
             RunLoop.main.add(t, forMode: .common)
             reassert = t
         }
-        override func mouseExited(with event: NSEvent) {
+
+        private func tick() {
+            guard let w = window, w.isVisible else { stop(restore: true); return }
+            if holding || mouseIsOver(w) { cursor.set() } else { stop(restore: true) }
+        }
+
+        private func mouseIsOver(_ w: NSWindow) -> Bool {
+            let r = w.convertToScreen(convert(bounds, to: nil))
+            return r.insetBy(dx: -3, dy: -3).contains(NSEvent.mouseLocation)
+        }
+
+        private func stop(restore: Bool) {
             reassert?.invalidate()
             reassert = nil
-            NSCursor.arrow.set()
+            if restore { NSCursor.arrow.set() }
         }
-        deinit { reassert?.invalidate() }
     }
 
     func makeNSView(context: Context) -> TrackingView { let v = TrackingView(); v.cursor = cursor; return v }
-    func updateNSView(_ v: TrackingView, context: Context) { v.cursor = cursor }
+    func updateNSView(_ v: TrackingView, context: Context) { v.cursor = cursor; v.holding = holding }
 }
 
 final class HandleHover: ObservableObject { @Published var on = false }
@@ -184,7 +205,7 @@ struct ResizeHandle: View {
             .animation(.easeOut(duration: 0.15), value: active)
             .padding(vertical ? .vertical : .horizontal, 5)
             .contentShape(Rectangle())
-            .overlay(CursorArea(cursor: vertical ? NSCursor.resizeUpDown : NSCursor.resizeLeftRight))
+            .overlay(CursorArea(cursor: vertical ? NSCursor.resizeUpDown : NSCursor.resizeLeftRight, holding: drag.start != nil))
             .onHover { hover.on = $0 }
             .onTapGesture(count: 2) { model.config.iconSize = 48; model.save() }
             .gesture(
@@ -197,7 +218,7 @@ struct ResizeHandle: View {
                         let delta = vertical ? (s.y - m.y) : (m.x - s.x)
                         model.config.iconSize = min(max((drag.startSize + delta * 0.25).rounded(), 28), 96)
                     }
-                    .onEnded { _ in drag.start = nil; model.save() }
+                    .onEnded { _ in drag.start = nil; hover.on = false; model.save() }
             )
             .help(L("handle.hint"))
     }
