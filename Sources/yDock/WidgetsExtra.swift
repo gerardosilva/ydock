@@ -386,14 +386,29 @@ struct ShortcutWidget: View {
 
 // MARK: - AirDrop (drop files on it to open the AirDrop sheet; click opens AirDrop)
 
+private let airDropAppPath = "/System/Library/CoreServices/Finder.app/Contents/Applications/AirDrop.app"
+
 struct AirDropWidget: View {
     let size: Double
     @StateObject private var target = HoverState()
 
+    /// The real AirDrop app icon (falls back to the SF Symbol if the system app is not where we expect it).
+    @ViewBuilder
+    private var icon: some View {
+        if FileManager.default.fileExists(atPath: airDropAppPath) {
+            Image(nsImage: NSWorkspace.shared.icon(forFile: airDropAppPath))
+                .resizable().frame(width: 30, height: 30)
+                .scaleEffect(target.on ? 1.12 : 1)
+                .animation(.spring(response: 0.25, dampingFraction: 0.7), value: target.on)
+        } else {
+            Image(systemName: "airdrop").font(.system(size: 22))
+        }
+    }
+
     var body: some View {
         WidgetCard(size: size) {
             VStack(spacing: 3) {
-                Image(systemName: "airdrop").font(.system(size: 18))
+                icon
                 caption(target.on ? L("airdrop.drop") : "AirDrop")
             }
             .foregroundStyle(target.on ? Color.accentColor : Color.primary)
