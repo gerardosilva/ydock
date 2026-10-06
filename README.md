@@ -147,6 +147,12 @@ open yDock.app --args --detail=activity    # a widget's popover
 open yDock.app --args --ring               # alarm ringing window
 ```
 
+The app icon is drawn in code so it stays crisp and reproducible: `tools/make-icon.swift` renders every size, and `Assets/AppIcon.icns` is what `build.sh` bundles.
+
+```bash
+swift tools/make-icon.swift /tmp/icon && iconutil -c icns /tmp/icon/AppIcon.iconset -o Assets/AppIcon.icns
+```
+
 Adding a widget: implement the view, register it in `baseWidget` (`Widgets.swift`) and in `WidgetCatalog` (`Gallery.swift`), add its name to `Localization.swift`, and optionally a detail popover in `Details.swift`.
 
 ## Status

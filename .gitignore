@@ -4,3 +4,5 @@
 .DS_Store
 # local code-signing identity (private key lives here) — never commit
 signing/
+# icon design explorations (the chosen icon lives in Assets/AppIcon.*)
+Assets/icon-options/
